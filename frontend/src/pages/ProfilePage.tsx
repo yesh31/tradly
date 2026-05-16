@@ -74,6 +74,8 @@ const CoverPhotoButton = styled.button`
 `;
 
 const ProfileHeader = styled(motion.div)`
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

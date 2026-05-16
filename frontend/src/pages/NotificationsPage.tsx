@@ -233,7 +233,7 @@ const NotificationsPage = () => {
     if (notification.data?.productId) {
       navigate(`/products/${notification.data.productId}`);
     } else if (notification.type === 'NEW_MESSAGE' && notification.data?.conversationId) {
-      navigate(`/chat/${notification.data.conversationId}`);
+      navigate(`/messages/${notification.data.conversationId}`);
     }
   };
 

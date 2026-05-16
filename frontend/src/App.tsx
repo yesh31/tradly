@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme, GlobalStyle } from '@/styles/theme';
@@ -54,8 +54,9 @@ function App() {
               <Route path="/profile/:username" element={<ProfilePage />} />
               <Route path="/create" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
               <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListingPage /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-              <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+              <Route path="/my-listings" element={<Navigate to="/profile?tab=listings" replace />} />
+              <Route path="/messages" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+              <Route path="/messages/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboardPage /></AdminRoute></ProtectedRoute>} />
             </Route>

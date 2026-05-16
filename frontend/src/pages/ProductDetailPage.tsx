@@ -489,9 +489,9 @@ export default function ProductDetailPage() {
     mutationFn: () => chat.createOrGetConversation({ sellerId: product!.userId, productId: id! }),
     onSuccess: (res) => {
       if (res.data?.id) {
-        navigate(`/chat?conversation=${res.data.id}`);
+        navigate(`/messages/${res.data.id}`);
       } else {
-        navigate('/chat');
+        navigate('/messages');
       }
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to start conversation'),
