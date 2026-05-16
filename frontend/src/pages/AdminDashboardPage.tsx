@@ -730,7 +730,7 @@ function AnalyticsTab() {
     queryFn: () => admin.getAnalytics(),
   });
 
-  const analytics = data as AdminAnalytics | undefined;
+  const analytics = data?.data as AdminAnalytics | undefined;
 
   if (isError) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--error)' }}>Failed to load analytics.</div>;
 

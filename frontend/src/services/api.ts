@@ -160,7 +160,7 @@ export const auth = {
     extractData(api.put<ApiResponse<User>>('/auth/profile', data)),
 
   changePassword: (currentPassword: string, newPassword: string) =>
-    extractData(api.put<ApiResponse<void>>('/auth/change-password', { currentPassword, newPassword })),
+    extractData(api.put<ApiResponse<void>>('/auth/change-password', { oldPassword: currentPassword, newPassword })),
 };
 
 export const products = {
@@ -186,7 +186,7 @@ export const products = {
     extractData(api.patch<ApiResponse<Product>>(`/products/${id}/pause`)),
 
   getUserProducts: (userId: string) =>
-    extractData(api.get<PaginatedResponse<Product>>(`/users/${userId}/products`)),
+    extractData(api.get<PaginatedResponse<Product>>(`/products/user/${userId}`)),
 
   getTrendingProducts: () =>
     extractData(api.get<ApiResponse<Product[]>>('/products/trending')),
@@ -214,28 +214,28 @@ export const bids = {
 
 export const chat = {
   getConversations: () =>
-    extractData(api.get<ApiResponse<Conversation[]>>('/conversations')),
+    extractData(api.get<ApiResponse<Conversation[]>>('/chat/conversations')),
 
   getConversationMessages: (id: string, page?: number) =>
-    extractData(api.get<PaginatedResponse<Message>>(`/conversations/${id}/messages`, { params: { page } })),
+    extractData(api.get<PaginatedResponse<Message>>(`/chat/conversations/${id}/messages`, { params: { page } })),
 
   sendMessage: (conversationId: string, data: { content?: string; imageUrl?: string }) =>
-    extractData(api.post<ApiResponse<Message>>(`/conversations/${conversationId}/messages`, data)),
+    extractData(api.post<ApiResponse<Message>>(`/chat/conversations/${conversationId}/messages`, data)),
 
   createOrGetConversation: (data: { sellerId: string; productId?: string }) =>
-    extractData(api.post<ApiResponse<Conversation>>('/conversations', data)),
+    extractData(api.post<ApiResponse<Conversation>>('/chat/conversations', data)),
 
   markAsRead: (conversationId: string) =>
-    extractData(api.patch<ApiResponse<void>>(`/conversations/${conversationId}/read`)),
+    extractData(api.patch<ApiResponse<void>>(`/chat/conversations/${conversationId}/read`)),
 
   getUnreadCount: () =>
-    extractData(api.get<ApiResponse<number>>('/conversations/unread-count')),
+    extractData(api.get<ApiResponse<number>>('/chat/unread')),
 
   blockUser: (userId: string) =>
-    extractData(api.post<ApiResponse<void>>(`/users/${userId}/block`)),
+    extractData(api.post<ApiResponse<void>>(`/chat/block/${userId}`)),
 
   reportUser: (data: { reportedId: string; reason: string; description?: string }) =>
-    extractData(api.post<ApiResponse<void>>('/users/report', data)),
+    extractData(api.post<ApiResponse<void>>('/chat/report', data)),
 };
 
 export const notifications = {
@@ -249,7 +249,7 @@ export const notifications = {
     extractData(api.patch<ApiResponse<void>>('/notifications/read-all')),
 
   getUnreadCount: () =>
-    extractData(api.get<ApiResponse<number>>('/notifications/unread-count')),
+    extractData(api.get<ApiResponse<number>>('/notifications/unread')),
 
   deleteNotification: (id: string) =>
     extractData(api.delete<ApiResponse<void>>(`/notifications/${id}`)),
@@ -271,10 +271,10 @@ export const ai = {
 
 export const reviews = {
   getUserReviews: (userId: string, page?: number) =>
-    extractData(api.get<PaginatedResponse<Review>>(`/users/${userId}/reviews`, { params: { page } })),
+    extractData(api.get<PaginatedResponse<Review>>(`/reviews/user/${userId}`, { params: { page } })),
 
   getProductReviews: (productId: string) =>
-    extractData(api.get<ApiResponse<Review[]>>(`/products/${productId}/reviews`)),
+    extractData(api.get<ApiResponse<Review[]>>(`/reviews/product/${productId}`)),
 
   createReview: (data: { productId: string; reviewedId: string; rating: number; comment?: string }) =>
     extractData(api.post<ApiResponse<Review>>('/reviews', data)),
@@ -294,7 +294,7 @@ export const watchlist = {
     extractData(api.delete<ApiResponse<void>>(`/watchlist/${productId}`)),
 
   checkWatchlist: (productId: string) =>
-    extractData(api.get<ApiResponse<boolean>>(`/watchlist/${productId}/check`)),
+    extractData(api.get<ApiResponse<boolean>>(`/watchlist/check/${productId}`)),
 };
 
 export const admin = {

@@ -35,7 +35,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       prisma.user.count({ where }),
     ]);
 
-    return res.json({ data: { users, total, page, totalPages: Math.ceil(total / take) } });
+    return res.json({ data: users, total, page, totalPages: Math.ceil(total / take) });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch users' });
   }
@@ -134,7 +134,7 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
       prisma.product.count({ where }),
     ]);
 
-    return res.json({ data: { products, total, page, totalPages: Math.ceil(total / take) } });
+    return res.json({ data: products, total, page, totalPages: Math.ceil(total / take) });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch products' });
   }
@@ -194,7 +194,7 @@ export const getReports = async (req: AuthRequest, res: Response) => {
       prisma.report.count({ where }),
     ]);
 
-    return res.json({ data: { reports, total, page, totalPages: Math.ceil(total / take) } });
+    return res.json({ data: reports, total, page, totalPages: Math.ceil(total / take) });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch reports' });
   }
@@ -223,12 +223,11 @@ export const handleReport = async (req: AuthRequest, res: Response) => {
 export const getAnalytics = async (req: AuthRequest, res: Response) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const [
       totalUsers, newUsers30d, totalProducts, activeProducts,
       productsSold30d, totalBids, totalReports, pendingReports,
-      revenue30d,
+      revenueAgg, avgPriceAgg, totalAdmins, totalModerators, prevMonthUsers,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
@@ -238,14 +237,29 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       prisma.bid.count(),
       prisma.report.count(),
       prisma.report.count({ where: { status: 'PENDING' } }),
-      prisma.product.count({ where: { status: 'SOLD', updatedAt: { gte: thirtyDaysAgo } } }),
+      prisma.product.aggregate({ where: { status: 'SOLD', updatedAt: { gte: thirtyDaysAgo } }, _sum: { price: true } }),
+      prisma.product.aggregate({ where: { status: 'ACTIVE' }, _avg: { price: true } }),
+      prisma.user.count({ where: { role: 'ADMIN' } }),
+      prisma.user.count({ where: { role: 'MODERATOR' } }),
+      prisma.user.count({ where: { createdAt: { lt: thirtyDaysAgo } } }),
     ]);
 
     return res.json({
       data: {
-        totalUsers, newUsers30d, totalProducts, activeProducts,
-        productsSold30d, totalBids, totalReports, pendingReports,
-        conversionRate: totalProducts > 0 ? ((productsSold30d / totalProducts) * 100).toFixed(1) : '0',
+        totalUsers,
+        newUsers30d,
+        totalProducts,
+        activeProducts,
+        productsSold30d,
+        totalBids,
+        totalReports,
+        pendingReports,
+        conversionRate: totalProducts > 0 ? +((productsSold30d / totalProducts) * 100).toFixed(1) : 0,
+        userGrowth: prevMonthUsers > 0 ? +((newUsers30d / prevMonthUsers) * 100).toFixed(1) : 0,
+        revenue30d: revenueAgg._sum.price ?? 0,
+        avgListingPrice: avgPriceAgg._avg.price ?? 0,
+        totalAdmins,
+        totalModerators,
       },
     });
   } catch (error) {
