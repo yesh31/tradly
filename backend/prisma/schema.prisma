@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ProductStatus {
+  ACTIVE
+  PAUSED
+  SOLD
+  DELETED
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ListingType {
+  FIXED_PRICE
+  AUCTION
+  BEST_OFFER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+enum NotificationType {
+  BID_RECEIVED
+  BID_OUTBID
+  AUCTION_WON
+  AUCTION_ENDING
+  NEW_MESSAGE
+  PRODUCT_SOLD
+  PRODUCT_LIKED
+  FOLLOW
+  SYSTEM
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String?
+  name              String
+  username          String    @unique
+  avatarUrl         String?
+  bio               String?
+  phone             String?
+  location          String?
+  latitude          Float?
+  longitude         Float?
+  role              UserRole  @default(USER)
+  isVerified        Boolean   @default(false)
+  isGoogleAccount   Boolean   @default(false)
+  googleId          String?   @unique
+  trustScore        Int       @default(0)
+  isTrustedSeller   Boolean   @default(false)
+  isBanned          Boolean   @default(false)
+  banReason         String?
+  emailVerified     Boolean   @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExp     DateTime?
+  refreshToken      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  products            Product[]
+  bids                Bid[]
+  messages            Message[]
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  reviewsGiven        Review[]       @relation("ReviewGiven")
+  reviewsReceived     Review[]       @relation("ReviewReceived")
+  watchlist           Watchlist[]
+  reports             Report[]       @relation("Reporter")
+  reportsReceived     Report[]       @relation("ReportedUser")
+  notifications       Notification[]
+  sentNotifications   Notification[] @relation("NotificationSender")
+
+  @@index([email])
+  @@index([username])
+  @@index([latitude, longitude])
+}
+
+model Product {
+  id              String           @id @default(uuid())
+  title           String
+  description     String
+  price           Float?
+  category        String
+  condition       ProductCondition
+  listingType     ListingType      @default(FIXED_PRICE)
+  startingBid     Float?
+  minBidIncrement Float?
+  auctionEnd      DateTime?
+  location        String?
+  latitude        Float?
+  longitude       Float?
+  tags            String[]
+  status          ProductStatus    @default(ACTIVE)
+  viewCount       Int              @default(0)
+  isPromoted      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  images        ProductImage[]
+  bids          Bid[]
+  reviews       Review[]
+  watchlist     Watchlist[]
+  reports       Report[]
+  conversations Conversation[]
+
+  @@index([category])
+  @@index([price])
+  @@index([status])
+  @@index([userId])
+  @@index([latitude, longitude])
+  @@index([createdAt])
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  url       String
+  thumbnail String?
+  alt       String?
+  order     Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Bid {
+  id        String   @id @default(uuid())
+  amount    Float
+  isWinner  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([amount])
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyerId String
+  buyer   User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  sellerId String
+  seller   User   @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+
+  @@unique([buyerId, sellerId, productId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  content   String?
+  imageUrl  String?
+  type      MessageType @default(TEXT)
+  isRead    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  reviewerId String
+  reviewer   User   @relation("ReviewGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  reviewedId String
+  reviewed   User   @relation("ReviewReceived", fields: [reviewedId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewerId, reviewedId, productId])
+  @@index([reviewedId])
+  @@index([productId])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   User?   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  resolvedAt  DateTime?
+  adminNote   String?
+
+  reporterId String
+  reporter   User   @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  reportedId String
+  reported   User   @relation("ReportedUser", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([reportedId])
+}
