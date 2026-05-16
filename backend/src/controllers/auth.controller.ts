@@ -123,7 +123,7 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
 
     await sendVerificationEmail(user.email, verificationToken);
 
-    res.status(201).json({ user, token, refreshToken });
+    res.status(201).json({ data: { user, token, refreshToken } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -175,7 +175,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
 
     const { passwordHash: _, refreshToken: __, resetToken, resetTokenExp, verificationToken, ...safeUser } = user;
 
-    res.status(200).json({ user: safeUser, token, refreshToken });
+    res.status(200).json({ data: { user: safeUser, token, refreshToken } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -204,7 +204,7 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
       sameSite: 'lax',
     });
 
-    res.status(200).json({ message: 'Logged out successfully' });
+    res.status(200).json({ data: { message: 'Logged out successfully' } });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -248,7 +248,7 @@ export const refreshToken = async (req: AuthRequest, res: Response): Promise<voi
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ token, refreshToken: newRefreshToken });
+    res.status(200).json({ data: { token, refreshToken: newRefreshToken } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -285,7 +285,7 @@ export const verifyEmail = async (req: AuthRequest, res: Response): Promise<void
       },
     });
 
-    res.status(200).json({ message: 'Email verified successfully' });
+    res.status(200).json({ data: { message: 'Email verified successfully' } });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -300,7 +300,7 @@ export const forgotPassword = async (req: AuthRequest, res: Response): Promise<v
     });
 
     if (!user) {
-      res.status(200).json({ message: 'If that email exists, a reset link has been sent' });
+      res.status(200).json({ data: { message: 'If that email exists, a reset link has been sent' } });
       return;
     }
 
@@ -316,7 +316,7 @@ export const forgotPassword = async (req: AuthRequest, res: Response): Promise<v
 
     await sendPasswordResetEmail(user.email, resetToken);
 
-    res.status(200).json({ message: 'If that email exists, a reset link has been sent' });
+    res.status(200).json({ data: { message: 'If that email exists, a reset link has been sent' } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -353,7 +353,7 @@ export const resetPassword = async (req: AuthRequest, res: Response): Promise<vo
       },
     });
 
-    res.status(200).json({ message: 'Password reset successfully' });
+    res.status(200).json({ data: { message: 'Password reset successfully' } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -445,7 +445,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       },
     });
 
-    res.status(200).json({ user: safeUser, token, refreshToken });
+    res.status(200).json({ data: { user: safeUser, token, refreshToken } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -492,7 +492,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json({ user });
+    res.status(200).json({ data: user });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -538,7 +538,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       },
     });
 
-    res.status(200).json({ user });
+    res.status(200).json({ data: user });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });
@@ -580,7 +580,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
       data: { passwordHash },
     });
 
-    res.status(200).json({ message: 'Password changed successfully' });
+    res.status(200).json({ data: { message: 'Password changed successfully' } });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors[0].message });

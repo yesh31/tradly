@@ -40,11 +40,23 @@ const processQueue = (error: unknown, token: string | null = null) => {
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
+
+const getStoredToken = (): string | null => {
+  try {
+    const raw = localStorage.getItem('tradly-auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.state?.token || null;
+    }
+  } catch {}
+  return null;
+};
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getStoredToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -76,10 +88,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await api.post<ApiResponse<{ accessToken: string }>>('/auth/refresh');
-        const newToken = data.data?.accessToken;
+        const { data } = await api.post<ApiResponse<{ token: string }>>('/auth/refresh');
+        const newToken = data.data?.token;
         if (newToken) {
-          localStorage.setItem('accessToken', newToken);
+          const raw = localStorage.getItem('tradly-auth');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.state.token = newToken;
+            localStorage.setItem('tradly-auth', JSON.stringify(parsed));
+          }
           processQueue(null, newToken);
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -89,8 +106,12 @@ api.interceptors.response.use(
         throw new Error('No token in refresh response');
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        const raw = localStorage.getItem('tradly-auth');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.state.token = null;
+          localStorage.setItem('tradly-auth', JSON.stringify(parsed));
+        }
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -109,16 +130,16 @@ const extractData = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
 
 export const auth = {
   register: (input: RegisterInput) =>
-    extractData(api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/register', input)),
+    extractData(api.post<ApiResponse<{ user: User; token: string }>>('/auth/register', input)),
 
   login: (input: LoginInput) =>
-    extractData(api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/login', input)),
+    extractData(api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', input)),
 
   logout: () =>
     extractData(api.post<ApiResponse<void>>('/auth/logout')),
 
   refreshToken: () =>
-    extractData(api.post<ApiResponse<{ accessToken: string }>>('/auth/refresh')),
+    extractData(api.post<ApiResponse<{ token: string }>>('/auth/refresh')),
 
   verifyEmail: (token: string) =>
     extractData(api.post<ApiResponse<void>>('/auth/verify-email', { token })),
@@ -130,7 +151,7 @@ export const auth = {
     extractData(api.post<ApiResponse<void>>('/auth/reset-password', { token, password })),
 
   googleAuth: (credential: string) =>
-    extractData(api.post<ApiResponse<{ user: User; accessToken: string }>>('/auth/google', { credential })),
+    extractData(api.post<ApiResponse<{ user: User; token: string }>>('/auth/google', { googleId: credential, email: '', name: '' })),
 
   getMe: () =>
     extractData(api.get<ApiResponse<User>>('/auth/me')),

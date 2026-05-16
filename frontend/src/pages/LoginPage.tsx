@@ -137,7 +137,7 @@ export default function LoginPage() {
     try {
       const res = await auth.login({ email: email.trim(), password });
       if (res.data) {
-        setAuth(res.data.user, res.data.accessToken);
+        setAuth(res.data.user, res.data.token);
         toast.success('Welcome back!');
         navigate(returnUrl, { replace: true });
       } else {

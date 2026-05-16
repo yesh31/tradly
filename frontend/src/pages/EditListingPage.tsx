@@ -456,7 +456,9 @@ function ReviewStep({ form, onGenerateDescription, onSuggestPrice, isGeneratingD
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } });
+  const raw = localStorage.getItem('tradly-auth');
+  const token = raw ? JSON.parse(raw)?.state?.token : null;
+  const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { Authorization: `Bearer ${token || ''}` } });
   const json = await res.json();
   const url = json.data?.url;
   if (!url) throw new Error('Image upload failed');

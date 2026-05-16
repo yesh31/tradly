@@ -15,6 +15,7 @@ interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   onClick?: MouseEventHandler<HTMLButtonElement>;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const variantStyles = {
@@ -126,7 +127,7 @@ const Spinner = styled.svg`
 `;
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', isLoading = false, fullWidth = false, disabled, children, className, type = 'button', onClick }, ref) => {
+  ({ variant = 'primary', size = 'md', isLoading = false, fullWidth = false, disabled, children, className, type = 'button', onClick, style }, ref) => {
     const isDisabled = disabled || isLoading;
 
     return (
@@ -139,6 +140,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         onClick={onClick}
         className={className}
+        style={style}
       >
         {isLoading && (
           <Spinner viewBox="0 0 24 24" fill="none">
