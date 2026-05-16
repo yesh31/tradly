@@ -256,10 +256,10 @@ export const notifications = {
 };
 
 export const ai = {
-  generateDescription: (data: { title: string; category: string; features?: string[] }) =>
+  generateDescription: (data: { title: string; category: string; condition?: string; features?: string[] }) =>
     extractData(api.post<ApiResponse<string>>('/ai/generate-description', data)),
 
-  suggestPrice: (data: { title: string; category: string; condition: string }) =>
+  suggestPrice: (data: { title: string; description: string; category: string; condition: string }) =>
     extractData(api.post<ApiResponse<{ suggestedPrice: number; minPrice: number; maxPrice: number }>>('/ai/suggest-price', data)),
 
   chatWithAI: (data: { message: string; context?: string }) =>

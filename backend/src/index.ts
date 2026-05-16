@@ -17,6 +17,7 @@ import aiRoutes from './routes/ai.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import watchlistRoutes from './routes/watchlist.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,6 +55,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/watchlist', watchlistRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

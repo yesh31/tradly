@@ -570,7 +570,7 @@ export default function EditListingPage() {
     if (!form || !form.title || !form.category) return;
     setIsSuggestingPrice(true);
     try {
-      const res = await ai.suggestPrice({ title: form.title, category: form.category, condition: form.condition });
+      const res = await ai.suggestPrice({ title: form.title, description: form.description, category: form.category, condition: form.condition });
       if (res.data) { setSuggestedPrice({ min: res.data.minPrice, max: res.data.maxPrice }); toast.success('Price suggestion ready'); }
     } catch { toast.error('Failed to suggest price'); } finally { setIsSuggestingPrice(false); }
   }, [form]);

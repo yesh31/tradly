@@ -153,9 +153,9 @@ const StatLabelText = styled.p`
 
 const TabsContainer = styled.div`
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 2px solid ${({ theme }) => theme.colors.border};
   margin-bottom: 1.5rem;
-  overflow-x: auto;
   gap: 1rem;
 `;
 

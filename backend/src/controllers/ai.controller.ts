@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { AuthRequest, AIGenerateDescriptionPayload, AIPriceSuggestionPayload, AIChatPayload } from '../types/index.js';
+import { AuthRequest, AIPriceSuggestionPayload, AIChatPayload } from '../types/index.js';
 import { generateProductDescription, suggestFairPrice, chatResponse } from '../services/ai.service.js';
 import { prisma } from '../utils/prisma.js';
 
@@ -8,19 +8,19 @@ const conversationStore = new Map<string, { role: string; content: string }[]>()
 
 export async function generateDescription(req: AuthRequest, res: Response) {
   try {
-    const { imageUrls, category, condition } = req.body as AIGenerateDescriptionPayload;
+    const { imageUrls, category, condition, title, features } = req.body;
 
-    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      return res.status(400).json({ error: 'At least one image URL is required' });
+    if ((!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) && !title) {
+      return res.status(400).json({ error: 'Either image URLs or a title is required' });
     }
 
-    if (imageUrls.length > 10) {
+    if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 10) {
       return res.status(400).json({ error: 'Maximum 10 images allowed' });
     }
 
-    const result = await generateProductDescription(imageUrls, category || '', condition || '');
+    const result = await generateProductDescription({ imageUrls, category, condition, title, features });
 
-    return res.json(result);
+    return res.json({ data: result.description });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to generate description' });
   }
@@ -40,7 +40,7 @@ export async function suggestPrice(req: AuthRequest, res: Response) {
 
     const result = await suggestFairPrice(title, description, category || '', condition || '');
 
-    return res.json(result);
+    return res.json({ data: result });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to suggest price' });
   }
@@ -79,7 +79,7 @@ export async function chatWithAI(req: AuthRequest, res: Response) {
       }
     }
 
-    return res.json({ reply, conversationId: currentId });
+    return res.json({ data: { reply, conversationId: currentId } });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to process chat message' });
   }
@@ -116,7 +116,7 @@ export async function getTrendingSuggestions(_req: AuthRequest, res: Response) {
 
     const suggestions = [...new Set([...topCategories, ...topTags])].slice(0, 12);
 
-    return res.json({ suggestions });
+    return res.json({ data: { suggestions } });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to get trending suggestions' });
   }

@@ -82,7 +82,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.status(201).json(product);
+    return res.status(201).json({ data: product });
   } catch (error) {
     console.error('createProduct error:', error);
     return res.status(500).json({ error: 'Failed to create product' });
@@ -186,7 +186,9 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
       if (geoFilteredIds.length === 0) {
         return res.json({
           data: [],
-          pagination: { page, limit, total: 0, totalPages: 0 },
+          total: 0,
+          page,
+          totalPages: 0,
         });
       }
 
@@ -211,12 +213,9 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       data: products,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     console.error('getProducts error:', error);
@@ -270,9 +269,11 @@ export const getProduct = async (req: AuthRequest, res: Response) => {
     const { reviews: _reviews, ...productData } = product;
 
     return res.json({
-      ...productData,
-      viewCount: productData.viewCount + 1,
-      reviewStats,
+      data: {
+        ...productData,
+        viewCount: productData.viewCount + 1,
+        reviewStats,
+      },
     });
   } catch (error) {
     console.error('getProduct error:', error);
@@ -355,7 +356,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.json(product);
+    return res.json({ data: product });
   } catch (error) {
     console.error('updateProduct error:', error);
     return res.status(500).json({ error: 'Failed to update product' });
@@ -385,7 +386,7 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
       data: { status: 'DELETED' },
     });
 
-    return res.json({ message: 'Product deleted successfully' });
+    return res.json({ data: { message: 'Product deleted successfully' } });
   } catch (error) {
     console.error('deleteProduct error:', error);
     return res.status(500).json({ error: 'Failed to delete product' });
@@ -425,7 +426,7 @@ export const markAsSold = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.json(product);
+    return res.json({ data: product });
   } catch (error) {
     console.error('markAsSold error:', error);
     return res.status(500).json({ error: 'Failed to mark product as sold' });
@@ -467,7 +468,7 @@ export const pauseProduct = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.json(product);
+    return res.json({ data: product });
   } catch (error) {
     console.error('pauseProduct error:', error);
     return res.status(500).json({ error: 'Failed to toggle product status' });
@@ -513,12 +514,9 @@ export const getUserProducts = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       data: products,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     console.error('getUserProducts error:', error);
@@ -548,7 +546,7 @@ export const getTrendingProducts = async (_req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.json(products);
+    return res.json({ data: products });
   } catch (error) {
     console.error('getTrendingProducts error:', error);
     return res.status(500).json({ error: 'Failed to fetch trending products' });
@@ -558,7 +556,7 @@ export const getTrendingProducts = async (_req: AuthRequest, res: Response) => {
 export const getRecommendedProducts = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.json([]);
+      return res.json({ data: [] });
     }
 
     const userId = req.user.userId;
@@ -633,7 +631,7 @@ export const getRecommendedProducts = async (req: AuthRequest, res: Response) =>
       },
     });
 
-    return res.json(products);
+    return res.json({ data: products });
   } catch (error) {
     console.error('getRecommendedProducts error:', error);
     return res.status(500).json({ error: 'Failed to fetch recommended products' });

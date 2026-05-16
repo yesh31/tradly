@@ -45,6 +45,16 @@ const ContentArea = styled.main`
   min-width: 0;
 `;
 
+const MobileFilterButtonWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
+    display: none;
+  }
+`;
+
 const SearchContainer = styled.div`
   position: relative;
   margin-bottom: 2rem;
@@ -449,7 +459,7 @@ export default function ExplorePage() {
       <MainLayout>
         {/* DESKTOP SIDEBAR */}
         <Sidebar>
-          <div style={{ position: 'sticky', top: '6rem' }}>
+          <div style={{ position: 'sticky', top: '6rem', maxHeight: 'calc(100vh - 8rem)', overflowY: 'auto', paddingRight: '0.5rem' }}>
             {renderFilters()}
           </div>
         </Sidebar>
@@ -474,11 +484,11 @@ export default function ExplorePage() {
             ))}
           </CategoryTabs>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-            <Button variant="outline" onClick={() => setMobileFilterOpen(true)} className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MobileFilterButtonWrapper>
+            <Button variant="outline" onClick={() => setMobileFilterOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <FilterIcon /> Filters
             </Button>
-          </div>
+          </MobileFilterButtonWrapper>
 
           {isLoading && <ProductGridSkeleton />}
 

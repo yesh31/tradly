@@ -81,39 +81,59 @@ function mockChatReply(message: string): string {
 }
 
 export async function generateProductDescription(
-  imageUrls: string[],
-  category: string,
-  condition: string
+  payload: { imageUrls?: string[]; category?: string; condition?: string; title?: string; features?: string[] }
 ): Promise<{ title: string; description: string }> {
+  const { imageUrls, category, condition, title, features } = payload;
   const client = getClient();
   if (!client) {
-    return mockDescription(category, condition);
+    return mockDescription(category || '', condition || '');
   }
 
   try {
-    const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-      {
-        type: 'text',
-        text: `You are a product listing assistant. Analyze the provided product images and generate:
+    const hasImages = imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0;
+    let systemPrompt: string;
+
+    if (hasImages) {
+      systemPrompt = `You are a product listing assistant. Analyze the provided product images${title ? ` with the title "${title}"` : ''} and generate:
 1. A concise, SEO-friendly title (max 80 characters)
 2. A detailed description (2-4 sentences) highlighting visible features, condition, and appeal
 
 The product category is: ${category || 'Unknown'}
 The condition is: ${condition || 'Unknown'}
+${features && features.length > 0 ? `Key features: ${features.join(', ')}` : ''}
 
-Respond in JSON format: { "title": "...", "description": "..." }`,
-      },
-      ...imageUrls.map(
-        (url): OpenAI.Chat.Completions.ChatCompletionContentPart => ({
-          type: 'image_url',
-          image_url: { url },
-        })
-      ),
+Respond in JSON format: { "title": "...", "description": "..." }`;
+    } else {
+      systemPrompt = `You are a product listing assistant. Based on the product title and details, generate:
+1. A concise, SEO-friendly title (max 80 characters)
+2. A detailed description (2-4 sentences) highlighting features and appeal
+
+Product title: ${title || 'Unknown'}
+Category: ${category || 'Unknown'}
+Condition: ${condition || 'Unknown'}
+${features && features.length > 0 ? `Key features: ${features.join(', ')}` : ''}
+
+Respond in JSON format: { "title": "...", "description": "..." }`;
+    }
+
+    const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+      { type: 'text', text: systemPrompt },
     ];
 
+    if (hasImages) {
+      content.push(
+        ...imageUrls.map(
+          (url): OpenAI.Chat.Completions.ChatCompletionContentPart => ({
+            type: 'image_url',
+            image_url: { url },
+          })
+        )
+      );
+    }
+
     const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: content }],
+      model: hasImages ? 'gpt-4o' : 'gpt-4o-mini',
+      messages: [{ role: 'user', content }],
       max_tokens: 500,
       temperature: 0.7,
     });
@@ -121,11 +141,11 @@ Respond in JSON format: { "title": "...", "description": "..." }`,
     const text = response.choices[0]?.message?.content || '{}';
     const parsed = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim());
     return {
-      title: parsed.title || mockDescription(category, condition).title,
-      description: parsed.description || mockDescription(category, condition).description,
+      title: parsed.title || mockDescription(category || '', condition || '').title,
+      description: parsed.description || mockDescription(category || '', condition || '').description,
     };
   } catch {
-    return mockDescription(category, condition);
+    return mockDescription(category || '', condition || '');
   }
 }
 
