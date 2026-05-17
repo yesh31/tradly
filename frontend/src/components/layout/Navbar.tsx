@@ -137,6 +137,56 @@ const MobileLink = styled(Link)`
   border-bottom: 1px solid ${({ theme }) => theme.colors.secondary};
 `;
 
+const DropdownMenu = styled(motion.div)`
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  width: 200px;
+  background-color: ${({ theme }) => theme.colors.background};
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  flex-direction: column;
+`;
+
+const DropdownItemLink = styled(Link)`
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.foreground};
+  font-weight: 600;
+  font-size: 0.875rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.secondary};
+  }
+`;
+
+const DropdownItemButton = styled.button`
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.error};
+  font-size: 0.875rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.secondary};
+  }
+`;
+
+const AvatarContainer = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.colors.border};
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { theme, setTheme } = useUIStore();
@@ -222,38 +272,32 @@ export default function Navbar() {
               >
                 <div style={{
                   width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'var(--border)', overflow: 'hidden',
+                  background: 'transparent', overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  {user?.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    user?.name?.charAt(0)?.toUpperCase() || '?'
-                  )}
+                  <AvatarContainer>
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      user?.name?.charAt(0)?.toUpperCase() || '?'
+                    )}
+                  </AvatarContainer>
                 </div>
               </button>
 
               <AnimatePresence>
                 {dropdownOpen && (
-                  <motion.div
+                  <DropdownMenu
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    style={{
-                      position: 'absolute', right: 0, top: '100%', marginTop: '0.5rem',
-                      width: '200px', background: 'var(--background)',
-                      border: '2px solid var(--border)', display: 'flex', flexDirection: 'column'
-                    }}
                   >
-                    <StyledLink to={`/profile/${user?.username}`} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Profile</StyledLink>
-                    <StyledLink to="/my-listings" style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>My Listings</StyledLink>
-                    <StyledLink to="/messages" style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Messages</StyledLink>
-                    {user?.role === 'ADMIN' && <StyledLink to="/admin" style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Admin</StyledLink>}
-                    <button onClick={handleLogout} style={{
-                      padding: '0.75rem 1rem', background: 'transparent', border: 'none',
-                      textAlign: 'left', cursor: 'pointer', fontWeight: 600, color: 'var(--error)'
-                    }}>Logout</button>
-                  </motion.div>
+                    <DropdownItemLink to={`/profile/${user?.username}`}>Profile</DropdownItemLink>
+                    <DropdownItemLink to="/my-listings">My Listings</DropdownItemLink>
+                    <DropdownItemLink to="/messages">Messages</DropdownItemLink>
+                    {user?.role === 'ADMIN' && <DropdownItemLink to="/admin">Admin</DropdownItemLink>}
+                    <DropdownItemButton onClick={handleLogout}>Logout</DropdownItemButton>
+                  </DropdownMenu>
                 )}
               </AnimatePresence>
             </div>

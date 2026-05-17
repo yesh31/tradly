@@ -343,7 +343,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
-              The minimal, fast, and direct marketplace for the next generation. No middlemen. Just you and the goods.
+              A minimal, fast, and direct marketplace for the next generation. No middlemen. Just you and the goods.
             </HeroSubtitle>
             
             <motion.div

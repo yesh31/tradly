@@ -18,7 +18,7 @@ export const useUIStore = create<UIState>((set) => ({
   isAIChatOpen: false,
   isMobileMenuOpen: false,
   isSearchOpen: false,
-  theme: 'light',
+  theme: 'dark',
   toggleAIChat: () => set((s) => ({ isAIChatOpen: !s.isAIChatOpen })),
   setAIChatOpen: (open) => set({ isAIChatOpen: open }),
   toggleMobileMenu: () => set((s) => ({ isMobileMenuOpen: !s.isMobileMenuOpen })),

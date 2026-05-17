@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineSparkles, HiOutlinePaperAirplane } from 'react-icons/hi2';
 import { HiOutlineX } from 'react-icons/hi';
+import styled from 'styled-components';
 import { useUIStore } from '@/store/uiStore';
 import { ai } from '@/services/api';
 
@@ -16,17 +17,192 @@ function generateId() {
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+const WidgetButton = styled(motion.button)`
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+  display: flex;
+  height: 3.5rem;
+  width: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.background};
+  border: 2px solid ${({ theme }) => theme.colors.primary};
+  box-shadow: 4px 4px 0px 0px ${({ theme }) => theme.colors.foreground};
+  cursor: pointer;
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+`;
+
+const Overlay = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background-color: rgba(0, 0, 0, 0.2);
+`;
+
+const ChatContainer = styled(motion.div)`
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  display: flex;
+  width: 360px;
+  flex-direction: column;
+  border-radius: 0;
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.background};
+  box-shadow: 8px 8px 0px 0px ${({ theme }) => theme.colors.primary};
+  height: 500px;
+  max-height: calc(100vh - 80px);
+`;
+
+const ChatHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+  padding: 1rem 1.25rem;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const HeaderIcon = styled.div`
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.background};
+`;
+
+const HeaderTitle = styled.h3`
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.foreground};
+  text-transform: uppercase;
+`;
+
+const HeaderSubtitle = styled.p`
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.muted};
+  text-transform: uppercase;
+`;
+
+const CloseButton = styled.button`
+  padding: 0.375rem;
+  color: ${({ theme }) => theme.colors.muted};
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.foreground};
+  }
+`;
+
+const ChatBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const MessageWrapper = styled.div<{ $isUser: boolean }>`
+  display: flex;
+  justify-content: ${({ $isUser }) => ($isUser ? 'flex-end' : 'flex-start')};
+  padding: 0 1rem;
+`;
+
+const MessageBubble = styled.div<{ $isUser: boolean }>`
+  padding: 0.625rem 1rem;
+  max-width: 85%;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ $isUser, theme }) =>
+    $isUser ? theme.colors.primary : theme.colors.secondary};
+  color: ${({ $isUser, theme }) =>
+    $isUser ? theme.colors.background : theme.colors.foreground};
+  border-radius: 0;
+`;
+
+const ChatFooter = styled.div`
+  border-top: 2px solid ${({ theme }) => theme.colors.border};
+  padding: 0.75rem 1rem;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const InputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ChatInput = styled.input`
+  flex: 1;
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.secondary};
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.foreground};
+  border-radius: 0;
+  transition: all 0.2s;
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.muted};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    background-color: ${({ theme }) => theme.colors.background};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`;
+
+const SendBtn = styled(motion.button)`
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.background};
+  border: 2px solid ${({ theme }) => theme.colors.primary};
+  border-radius: 0;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 function TypingIndicator() {
   return (
-    <div className="flex justify-start px-4">
-      <div className="rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3 max-w-[85%]">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-      </div>
-    </div>
+    <MessageWrapper $isUser={false}>
+      <MessageBubble $isUser={false} style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+        <div style={{ height: '8px', width: '8px', borderRadius: '50%', backgroundColor: 'currentColor', animation: 'bounce 1s infinite' }} />
+        <div style={{ height: '8px', width: '8px', borderRadius: '50%', backgroundColor: 'currentColor', animation: 'bounce 1s infinite 150ms' }} />
+        <div style={{ height: '8px', width: '8px', borderRadius: '50%', backgroundColor: 'currentColor', animation: 'bounce 1s infinite 300ms' }} />
+      </MessageBubble>
+    </MessageWrapper>
   );
 }
 
@@ -112,86 +288,61 @@ export default function AIChatWidget() {
 
   return (
     <>
-      <motion.button
+      <WidgetButton
         onClick={() => setAIChatOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg cursor-pointer"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        animate={{
-          boxShadow: [
-            '0 0 0 0 rgba(0,0,0,0.4)',
-            '0 0 0 12px rgba(0,0,0,0)',
-            '0 0 0 0 rgba(0,0,0,0)',
-          ],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
         <HiOutlineSparkles className="h-6 w-6" />
-      </motion.button>
+      </WidgetButton>
 
       <AnimatePresence>
         {isAIChatOpen && (
           <>
-            <motion.div
+            <Overlay
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/20"
               onClick={handleClose}
             />
 
-            <motion.div
+            <ChatContainer
               initial={{ opacity: 0, y: 60, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 60, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-6 right-6 z-50 flex w-[360px] flex-col rounded-2xl border border-gray-200 bg-white shadow-xl"
-              style={{ height: '500px', maxHeight: 'calc(100vh - 80px)' }}
             >
-              <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
-                    <HiOutlineSparkles className="h-4 w-4 text-white" />
-                  </div>
+              <ChatHeader>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                  <HeaderIcon>
+                    <HiOutlineSparkles className="h-4 w-4" />
+                  </HeaderIcon>
                   <div>
-                    <h3 className="text-sm font-semibold text-black">TradlyAI</h3>
-                    <p className="text-[11px] text-gray-400">AI Assistant</p>
+                    <HeaderTitle>TradlyAI</HeaderTitle>
+                    <HeaderSubtitle>AI Assistant</HeaderSubtitle>
                   </div>
                 </div>
-                <button
-                  onClick={handleClose}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-black transition-colors"
-                >
+                <CloseButton onClick={handleClose}>
                   <HiOutlineX className="h-5 w-5" />
-                </button>
-              </div>
+                </CloseButton>
+              </ChatHeader>
 
-              <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              <ChatBody>
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} px-4`}>
-                    <div
-                      className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'rounded-br-sm bg-black text-white'
-                          : 'rounded-bl-sm bg-gray-100 text-gray-800'
-                      }`}
-                    >
+                  <MessageWrapper key={msg.id} $isUser={msg.role === 'user'}>
+                    <MessageBubble $isUser={msg.role === 'user'}>
                       {msg.content}
-                    </div>
-                  </div>
+                    </MessageBubble>
+                  </MessageWrapper>
                 ))}
                 {isLoading && <TypingIndicator />}
                 <div ref={messagesEndRef} />
-              </div>
+              </ChatBody>
 
-              <div className="border-t border-gray-200 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <input
+              <ChatFooter>
+                <InputWrapper>
+                  <ChatInput
                     ref={inputRef}
                     type="text"
                     value={input}
@@ -199,19 +350,17 @@ export default function AIChatWidget() {
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message..."
                     disabled={isLoading}
-                    className="flex-1 rounded-xl border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-black placeholder-gray-400 focus:border-black focus:bg-white focus:outline-none transition-colors disabled:opacity-50"
                   />
-                  <motion.button
+                  <SendBtn
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
                     whileTap={input.trim() && !isLoading ? { scale: 0.9 } : undefined}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-black text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
                   >
                     <HiOutlinePaperAirplane className="h-4 w-4" />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
+                  </SendBtn>
+                </InputWrapper>
+              </ChatFooter>
+            </ChatContainer>
           </>
         )}
       </AnimatePresence>
