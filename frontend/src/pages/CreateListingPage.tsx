@@ -353,12 +353,12 @@ function PricingStep({ form, onChange }: { form: FormState; onChange: (patch: Pa
         </div>
       </div>
 
-      {!isAuction && <Input label="Price ($)" type="number" placeholder="0.00" value={form.price} onChange={(e) => onChange({ price: e.target.value })} min="0" step="0.01" />}
+      {!isAuction && <Input label="Price (₹)" type="number" placeholder="0.00" value={form.price} onChange={(e) => onChange({ price: e.target.value })} min="0" step="0.01" />}
 
       {isAuction && (
         <>
-          <Input label="Starting Bid ($)" type="number" placeholder="0.00" value={form.startingBid} onChange={(e) => onChange({ startingBid: e.target.value })} min="0" step="0.01" />
-          <Input label="Minimum Bid Increment ($)" type="number" placeholder="1.00" value={form.minBidIncrement} onChange={(e) => onChange({ minBidIncrement: e.target.value })} min="0" step="0.01" />
+          <Input label="Starting Bid (₹)" type="number" placeholder="0.00" value={form.startingBid} onChange={(e) => onChange({ startingBid: e.target.value })} min="0" step="0.01" />
+          <Input label="Minimum Bid Increment (₹)" type="number" placeholder="1.00" value={form.minBidIncrement} onChange={(e) => onChange({ minBidIncrement: e.target.value })} min="0" step="0.01" />
           <div>
             <Label>Auction End Date & Time</Label>
             <input type="datetime-local" value={form.auctionEnd} onChange={(e) => onChange({ auctionEnd: e.target.value })} min={new Date().toISOString().slice(0, 16)} style={{ width: '100%', padding: '0.75rem 1rem', fontFamily: 'inherit', fontWeight: 600, border: '2px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)', outline: 'none' }} />
@@ -382,11 +382,11 @@ function ReviewStep({ form, onGenerateDescription, onSuggestPrice, isGeneratingD
         <SummaryBox><Label>Category</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.category || '—'}</p></SummaryBox>
         <SummaryBox><Label>Condition</Label><p style={{ fontWeight: 800, margin: 0 }}>{conditionLabel[form.condition] ?? form.condition}</p></SummaryBox>
         <SummaryBox><Label>Listing Type</Label><p style={{ fontWeight: 800, margin: 0 }}>{listingTypeLabel[form.listingType] ?? form.listingType}</p></SummaryBox>
-        {form.listingType !== 'AUCTION' && <SummaryBox><Label>Price</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.price ? `$${parseFloat(form.price).toFixed(2)}` : '—'}</p></SummaryBox>}
+        {form.listingType !== 'AUCTION' && <SummaryBox><Label>Price</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.price ? `₹${parseFloat(form.price)}` : '—'}</p></SummaryBox>}
         {form.listingType === 'AUCTION' && (
           <>
-            <SummaryBox><Label>Starting Bid</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.startingBid ? `$${parseFloat(form.startingBid).toFixed(2)}` : '—'}</p></SummaryBox>
-            <SummaryBox><Label>Min Increment</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.minBidIncrement ? `$${parseFloat(form.minBidIncrement).toFixed(2)}` : '—'}</p></SummaryBox>
+            <SummaryBox><Label>Starting Bid</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.startingBid ? `₹${parseFloat(form.startingBid)}` : '—'}</p></SummaryBox>
+            <SummaryBox><Label>Min Increment</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.minBidIncrement ? `₹${parseFloat(form.minBidIncrement)}` : '—'}</p></SummaryBox>
           </>
         )}
         <SummaryBox><Label>Location</Label><p style={{ fontWeight: 800, margin: 0 }}>{form.location || '—'}</p></SummaryBox>
@@ -414,7 +414,7 @@ function ReviewStep({ form, onGenerateDescription, onSuggestPrice, isGeneratingD
 
       {suggestedPrice && (
         <div style={{ padding: '1rem', border: '2px solid var(--foreground)', backgroundColor: 'var(--secondary)' }}>
-          <p style={{ fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>Suggested price range: <span style={{ fontSize: '1.25rem', fontWeight: 800 }}>${suggestedPrice.min.toFixed(2)} – ${suggestedPrice.max.toFixed(2)}</span></p>
+          <p style={{ fontWeight: 700, margin: 0, textTransform: 'uppercase' }}>Suggested price range: <span style={{ fontSize: '1.25rem', fontWeight: 800 }}>₹{suggestedPrice.min} – ₹{suggestedPrice.max}</span></p>
         </div>
       )}
     </div>
@@ -484,10 +484,15 @@ export default function CreateListingPage() {
     if (!form.title || !form.category) return;
     setIsGeneratingDesc(true);
     try {
-      const res = await ai.generateDescription({ title: form.title, category: form.category, features: form.tags.length > 0 ? form.tags : undefined });
+      const res = await ai.generateDescription({
+        title: form.title,
+        category: form.category,
+        condition: form.condition,
+        features: form.tags.length > 0 ? form.tags : undefined
+      });
       if (res.data) { updateForm({ description: res.data }); toast.success('Description generated'); }
     } catch { toast.error('Failed to generate description'); } finally { setIsGeneratingDesc(false); }
-  }, [form.title, form.category, form.tags, updateForm]);
+  }, [form.title, form.category, form.condition, form.tags, updateForm]);
 
   const handleSuggestPrice = useCallback(async () => {
     if (!form.title || !form.category) return;
@@ -496,7 +501,7 @@ export default function CreateListingPage() {
       const res = await ai.suggestPrice({ title: form.title, description: form.description, category: form.category, condition: form.condition });
       if (res.data) { setSuggestedPrice({ min: res.data.minPrice, max: res.data.maxPrice }); toast.success('Price suggestion ready'); }
     } catch { toast.error('Failed to suggest price'); } finally { setIsSuggestingPrice(false); }
-  }, [form.title, form.category, form.condition]);
+  }, [form.title, form.description, form.category, form.condition]);
 
   const isLastStep = step === STEPS.length - 1;
 

@@ -159,6 +159,8 @@ export const getProducts = async (req: AuthRequest, res: Response) => {
 
     if (userId) {
       where.userId = userId;
+    } else if (req.user?.userId) {
+      where.userId = { not: req.user.userId };
     }
 
     const latNum = lat ? parseFloat(lat) : NaN;
@@ -506,6 +508,9 @@ export const getUserProducts = async (req: AuthRequest, res: Response) => {
         orderBy: { [sortField]: sortOrder },
         include: {
           images: { take: 1, orderBy: { order: 'asc' } },
+          user: {
+            select: { id: true, name: true, avatarUrl: true, trustScore: true, isVerified: true },
+          },
           _count: { select: { bids: true } },
         },
       }),

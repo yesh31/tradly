@@ -34,11 +34,7 @@ export async function suggestPrice(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'Product title is required' });
     }
 
-    if (!description) {
-      return res.status(400).json({ error: 'Product description is required' });
-    }
-
-    const result = await suggestFairPrice(title, description, category || '', condition || '');
+    const result = await suggestFairPrice(title, description || '', category || '', condition || '');
 
     return res.json({ data: result });
   } catch (error) {

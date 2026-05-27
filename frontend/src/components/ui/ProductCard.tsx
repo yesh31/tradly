@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
 import type { Product } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 
 const CardWrapper = styled(motion.div)`
   border: 2px solid ${({ theme }) => theme.colors.border};
@@ -160,6 +161,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const imageUrl = product.images?.[0]?.url;
   const timeAgo = formatDistanceToNow(new Date(product.createdAt), { addSuffix: true });
   const bidCount = product._count?.bids ?? product.bids?.length ?? 0;
+  const { user } = useAuthStore();
+  const isOwnListing = user && product.userId === user.id;
 
   return (
     <Link to={`/products/${product.id}`} style={{ display: 'block', height: '100%' }}>
@@ -180,7 +183,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
           {product.listingType === 'AUCTION' ? (
             <div>
-              <Price>${product.startingBid?.toFixed(2)}</Price>
+              <Price>₹{product.startingBid}</Price>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
                 <SubText>
                   {bidCount} bid{bidCount !== 1 ? 's' : ''}
@@ -191,7 +194,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           ) : (
             <div>
               {product.price != null && (
-                <Price>${product.price.toFixed(2)}</Price>
+                <Price>₹{product.price}</Price>
               )}
             </div>
           )}
@@ -205,7 +208,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <FallbackAvatar />
             )}
             <SubText style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {product.user?.name ?? 'Unknown'}
+              {isOwnListing ? 'You' : (product.user?.name ?? 'Unknown')}
             </SubText>
             <SubText style={{ textAlign: 'right' }}>{timeAgo}</SubText>
           </UserSection>

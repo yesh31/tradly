@@ -605,7 +605,7 @@ function ProductsTab() {
                     </Td>
                     <Td style={{ fontWeight: 800 }}>{product.title}</Td>
                     <Td>{product.user?.name ?? 'Unknown'}</Td>
-                    <Td style={{ fontWeight: 800 }}>{product.price ? `$${product.price.toFixed(2)}` : product.startingBid ? `From $${product.startingBid.toFixed(2)}` : '-'}</Td>
+                    <Td style={{ fontWeight: 800 }}>{product.price ? `₹${product.price}` : product.startingBid ? `From ₹${product.startingBid}` : '-'}</Td>
                     <Td>
                       <Badge variant={statusColors[product.status] ?? 'default'} size="sm">{product.status}</Badge>
                     </Td>
@@ -756,8 +756,8 @@ function AnalyticsTab() {
   const detailCards = [
     { icon: <HiOutlineChartBar size={20} />, label: 'Conversion Rate', value: `${analytics.conversionRate}%` },
     { icon: <HiOutlineTrendingUp size={20} />, label: 'User Growth', value: `${analytics.userGrowth}%` },
-    { icon: <HiOutlineCurrencyDollar size={20} />, label: 'Revenue (30d)', value: `$${analytics.revenue30d.toLocaleString()}` },
-    { icon: <HiOutlineStar size={20} />, label: 'Avg. Listing Price', value: `$${analytics.avgListingPrice.toFixed(2)}` },
+    { icon: <HiOutlineCurrencyDollar size={20} />, label: 'Revenue (30d)', value: `₹${analytics.revenue30d.toLocaleString()}` },
+    { icon: <HiOutlineStar size={20} />, label: 'Avg. Listing Price', value: `₹${analytics.avgListingPrice}` },
     { icon: <HiOutlineShieldCheck size={20} />, label: 'Admins', value: analytics.totalAdmins.toLocaleString() },
     { icon: <HiOutlineUsers size={20} />, label: 'Moderators', value: analytics.totalModerators.toLocaleString() },
   ];

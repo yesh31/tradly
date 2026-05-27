@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { format, formatDistanceToNow, differenceInSeconds } from 'date-fns';
 import toast from 'react-hot-toast';
 import { products, bids, watchlist, chat, reviews } from '@/services/api';
-import { getSocket, joinProduct, leaveProduct } from '@/services/socket';
+import { on, off, joinProduct, leaveProduct } from '@/services/socket';
 import { useAuthStore } from '@/store/authStore';
 import type { Review } from '@/types';
 import { Button, Badge, Skeleton, Modal, Input } from '@/components/ui';
@@ -438,8 +438,7 @@ export default function ProductDetailPage() {
   const currentImage = images[selectedImageIndex]?.url;
 
   useEffect(() => {
-    const sock = getSocket();
-    if (!sock?.connected || !id) return;
+    if (!id) return;
 
     joinProduct(id);
 
@@ -448,11 +447,11 @@ export default function ProductDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
     };
 
-    sock.on('bid:received', handleNewBid);
+    on('bid:new', handleNewBid);
 
     return () => {
       leaveProduct(id);
-      sock.off('bid:received', handleNewBid);
+      off('bid:new', handleNewBid);
     };
   }, [id, queryClient]);
 
@@ -504,7 +503,7 @@ export default function ProductDetailPage() {
       return;
     }
     if (amount <= highestBid) {
-      toast.error(`Bid must be higher than current bid of $${highestBid.toFixed(2)}`);
+      toast.error(`Bid must be higher than current bid of ₹${highestBid}`);
       return;
     }
     placeBidMutation.mutate(amount);
@@ -605,7 +604,7 @@ export default function ProductDetailPage() {
 
             {product.listingType === 'AUCTION' ? (
               <div style={{ marginTop: '1rem' }}>
-                <p style={{ margin: 0, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', fontSize: '0.875rem' }}>Starting bid: <span style={{ color: 'var(--foreground)' }}>${product.startingBid?.toFixed(2)}</span></p>
+                <p style={{ margin: 0, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', fontSize: '0.875rem' }}>Starting bid: <span style={{ color: 'var(--foreground)' }}>₹{product.startingBid}</span></p>
                 {product.auctionEnd && (
                   <div style={{ marginTop: '1rem' }}>
                     <AuctionCountdown endDate={product.auctionEnd} />
@@ -614,7 +613,7 @@ export default function ProductDetailPage() {
                 <AuctionBox>
                   <div>
                     <StatLabel>Current highest bid</StatLabel>
-                    <StatValue>${highestBid.toFixed(2)}</StatValue>
+                    <StatValue>₹{highestBid}</StatValue>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <StatLabel>Total bids</StatLabel>
@@ -625,11 +624,11 @@ export default function ProductDetailPage() {
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                     <Input
                       type="number"
-                      placeholder={`Min $${(highestBid + (product.minBidIncrement ?? 1)).toFixed(2)}`}
+                      placeholder={`Min ₹${(highestBid + (product.minBidIncrement ?? 1))}`}
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                       step="0.01"
-                      min={(highestBid + (product.minBidIncrement ?? 1)).toFixed(2)}
+                      min={(highestBid + (product.minBidIncrement ?? 1))}
                     />
                     <Button variant="primary" onClick={handlePlaceBid} isLoading={placeBidMutation.isPending} disabled={!bidAmount}>
                       Place Bid
@@ -639,9 +638,8 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <div style={{ marginTop: '1rem' }}>
-                {product.price != null && <PriceText>${product.price.toFixed(2)}</PriceText>}
+                {product.price != null && <PriceText>₹{product.price}</PriceText>}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                  <Button variant="primary" size="lg" fullWidth>Buy Now</Button>
                   <Button variant="outline" size="lg" fullWidth onClick={handleContactSeller} isLoading={createConversationMutation.isPending}>
                     <ChatIcon /> Contact Seller
                   </Button>
@@ -651,14 +649,14 @@ export default function ProductDetailPage() {
           </div>
 
           <div style={{ borderTop: '2px solid var(--border)', paddingTop: '1.5rem', marginTop: 'auto' }}>
-            <SellerCard to={`/profile/${product.user?.id}`}>
+            <SellerCard to={user && product.userId === user.id ? `/profile` : `/profile/${product.user?.id}`}>
               {product.user?.avatarUrl ? (
                 <SellerAvatar src={product.user.avatarUrl} alt="" />
               ) : (
-                <SellerFallback>{product.user?.name?.charAt(0) ?? '?'}</SellerFallback>
+                <SellerFallback>{(user && product.userId === user.id ? user.name : product.user?.name)?.charAt(0) ?? '?'}</SellerFallback>
               )}
               <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 800, margin: 0, textTransform: 'uppercase' }}>{product.user?.name ?? 'Unknown Seller'}</p>
+                <p style={{ fontWeight: 800, margin: 0, textTransform: 'uppercase' }}>{user && product.userId === user.id ? 'You' : (product.user?.name ?? 'Unknown Seller')}</p>
                 <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', margin: 0, textTransform: 'uppercase' }}>
                   Member since {product.user?.createdAt ? format(new Date(product.user.createdAt), 'MMM yyyy') : 'N/A'}
                 </p>
@@ -742,7 +740,7 @@ export default function ProductDetailPage() {
                           )}
                           {bid.user?.name ?? 'Anonymous'}
                         </Td>
-                        <Td style={{ textAlign: 'right' }}>${bid.amount.toFixed(2)}</Td>
+                        <Td style={{ textAlign: 'right' }}>₹{bid.amount}</Td>
                         <Td style={{ textAlign: 'right', paddingRight: '1rem', color: 'var(--muted)', fontSize: '0.75rem' }}>
                           {formatDistanceToNow(new Date(bid.createdAt), { addSuffix: true })}
                         </Td>

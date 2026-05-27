@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import styled from 'styled-components';
 import Navbar from './Navbar';
@@ -18,13 +18,16 @@ const MainContent = styled.main`
 `;
 
 export default function Layout() {
+  const location = useLocation();
+  const showFooter = !location.pathname.startsWith('/messages');
+
   return (
     <AppContainer>
       <Navbar />
       <MainContent>
         <Outlet />
       </MainContent>
-      <Footer />
+      {showFooter && <Footer />}
       <Toaster
         position="bottom-right"
         toastOptions={{

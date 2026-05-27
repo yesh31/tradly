@@ -13,6 +13,10 @@ export const config = {
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
   },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GEMINI_API_KEY,
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,

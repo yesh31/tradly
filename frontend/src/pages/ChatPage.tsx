@@ -18,7 +18,8 @@ import { chat } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import {
-  getSocket,
+  on,
+  off,
   joinConversation,
   leaveConversation,
   startTyping,
@@ -154,6 +155,17 @@ const ChatHeader = styled.div`
   border-bottom: 2px solid ${({ theme }) => theme.colors.border};
   background-color: ${({ theme }) => theme.colors.background};
   flex-shrink: 0;
+`;
+
+const ChatHeaderName = styled.p`
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.foreground};
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
 `;
 
 const BackButton = styled.button`
@@ -379,7 +391,7 @@ const ChatPage = () => {
     if (!activeConversationId) return;
     joinConversation(activeConversationId);
     chat.getConversationMessages(activeConversationId).then((res) => {
-      const data = (res as { data?: Message[] }).data ?? [];
+      const data = res.data?.messages ?? [];
       setMessages(activeConversationId, data);
     }).catch(() => {});
     chat.markAsRead(activeConversationId).catch(() => {});
@@ -387,8 +399,6 @@ const ChatPage = () => {
   }, [activeConversationId, setMessages]);
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
     const handleNewMessage = (data: Message) => {
       if (data.conversationId === activeConversationId) {
         addMessage(data.conversationId, data);
@@ -407,25 +417,25 @@ const ChatPage = () => {
         setTypingUsers((prev) => ({ ...prev, [data.conversationId]: false }));
       }
     };
-    socket.on('message:received', handleNewMessage);
-    socket.on('typing:start', handleTypingStart);
-    socket.on('typing:stop', handleTypingStop);
+    on('message:new', handleNewMessage);
+    on('typing:start', handleTypingStart);
+    on('typing:stop', handleTypingStop);
     return () => {
-      socket.off('message:received', handleNewMessage);
-      socket.off('typing:start', handleTypingStart);
-      socket.off('typing:stop', handleTypingStop);
+      off('message:new', handleNewMessage);
+      off('typing:start', handleTypingStart);
+      off('typing:stop', handleTypingStop);
     };
   }, [activeConversationId, currentUser?.id, addMessage, updateConversationLastMessage]);
 
   const handleSelectConversation = (id: string) => {
     setActiveConversation(id);
-    navigate(`/chat/${id}`, { replace: true });
+    navigate(`/messages/${id}`, { replace: true });
     if (window.innerWidth < 768) setShowMobileList(false);
   };
 
   const handleBack = () => {
     setShowMobileList(true);
-    navigate('/chat', { replace: true });
+    navigate('/messages', { replace: true });
   };
 
   return (
@@ -544,9 +554,9 @@ const ChatPage = () => {
                     </ConvAvatarFallback>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--foreground)', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
+                    <ChatHeaderName>
                       {otherUser.name}
-                    </p>
+                    </ChatHeaderName>
                     {activeConversation.product && (
                       <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
                         RE: {activeConversation.product.title}
@@ -672,7 +682,7 @@ const ChatInput = ({ conversationId, onSend }: { conversationId: string; onSend:
     setSending(true);
     emitTyping(false);
     try {
-      await chat.sendMessage(conversationId, { content: text.trim() });
+      await chat.sendMessage(conversationId, { content: text.trim(), type: 'TEXT' });
       setText('');
       onSend();
     } catch {
@@ -697,7 +707,7 @@ const ChatInput = ({ conversationId, onSend }: { conversationId: string; onSend:
       formData.append('image', file);
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
       const { url } = await uploadRes.json();
-      await chat.sendMessage(conversationId, { imageUrl: url });
+      await chat.sendMessage(conversationId, { imageUrl: url, type: 'IMAGE' });
     } catch {
     } finally {
       setSending(false);

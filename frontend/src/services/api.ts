@@ -217,16 +217,16 @@ export const chat = {
     extractData(api.get<ApiResponse<Conversation[]>>('/chat/conversations')),
 
   getConversationMessages: (id: string, page?: number) =>
-    extractData(api.get<PaginatedResponse<Message>>(`/chat/conversations/${id}/messages`, { params: { page } })),
+    extractData(api.get<ApiResponse<{ messages: Message[]; total: number; page: number; totalPages: number }>>(`/chat/conversations/${id}/messages`, { params: { page } })),
 
-  sendMessage: (conversationId: string, data: { content?: string; imageUrl?: string }) =>
+  sendMessage: (conversationId: string, data: { content?: string; imageUrl?: string; type?: 'TEXT' | 'IMAGE' }) =>
     extractData(api.post<ApiResponse<Message>>(`/chat/conversations/${conversationId}/messages`, data)),
 
   createOrGetConversation: (data: { sellerId: string; productId?: string }) =>
     extractData(api.post<ApiResponse<Conversation>>('/chat/conversations', data)),
 
   markAsRead: (conversationId: string) =>
-    extractData(api.patch<ApiResponse<void>>(`/chat/conversations/${conversationId}/read`)),
+    extractData(api.put<ApiResponse<void>>(`/chat/conversations/${conversationId}/read`)),
 
   getUnreadCount: () =>
     extractData(api.get<ApiResponse<number>>('/chat/unread')),
@@ -256,7 +256,7 @@ export const notifications = {
 };
 
 export const ai = {
-  generateDescription: (data: { title: string; category: string; condition?: string; features?: string[] }) =>
+  generateDescription: (data: { title: string; category: string; condition?: string; features?: string[]; imageUrls?: string[] }) =>
     extractData(api.post<ApiResponse<string>>('/ai/generate-description', data)),
 
   suggestPrice: (data: { title: string; description: string; category: string; condition: string }) =>

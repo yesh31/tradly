@@ -6,6 +6,8 @@ import styled from 'styled-components';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { notifications } from '@/services/api';
+import { useNotificationStore } from '@/store/notificationStore';
+import { on, off } from '@/services/socket';
 
 const NavContainer = styled.nav`
   position: sticky;
@@ -187,6 +189,18 @@ const AvatarContainer = styled.div`
   justify-content: center;
 `;
 
+const NotificationDot = styled.div`
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.colors.foreground};
+  border: 1px solid ${({ theme }) => theme.colors.background};
+  z-index: 10;
+`;
+
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { theme, setTheme } = useUIStore();
@@ -194,15 +208,29 @@ export default function Navbar() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
-      notifications.getUnreadCount().then((res) => { if (res.data !== undefined) setUnreadCount(res.data); }).catch(() => { });
+      notifications.getUnreadCount()
+        .then((res) => { if (res.data !== undefined) setUnreadCount(res.data); })
+        .catch(() => { });
+
+      const handleNewNotification = (data: any) => {
+        addNotification(data);
+      };
+
+      on('notification:new', handleNewNotification);
+
+      return () => {
+        off('notification:new', handleNewNotification);
+      };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, setUnreadCount, addNotification]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -235,6 +263,8 @@ export default function Navbar() {
         <ActionsContainer>
           <DesktopLinks>
             <StyledLink to="/explore">Explore</StyledLink>
+            {isAuthenticated && <StyledLink to="/my-listings">My Listings</StyledLink>}
+            {isAuthenticated && <StyledLink to="/messages">Chats</StyledLink>}
             {isAuthenticated && <StyledLink to="/create">Create Listing</StyledLink>}
           </DesktopLinks>
 
@@ -245,17 +275,7 @@ export default function Navbar() {
           {isAuthenticated && (
             <IconButton onClick={() => navigate('/notifications')} aria-label="Notifications" style={{ position: 'relative' }}>
               <HiOutlineBell size={20} />
-              {unreadCount > 0 && (
-                <div style={{
-                  position: 'absolute', top: 0, right: 0,
-                  background: 'red', color: 'white',
-                  fontSize: '10px', fontWeight: 'bold',
-                  borderRadius: '50%', width: '16px', height: '16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </div>
-              )}
+              {unreadCount > 0 && <NotificationDot />}
             </IconButton>
           )}
 

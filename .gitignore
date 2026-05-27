@@ -7,3 +7,4 @@ build/
 uploads/*
 !uploads/.gitkeep
 setup.ps1
+uploads

@@ -356,7 +356,7 @@ export default function LandingPage() {
                 {isAuthenticated ? (
                   <>
                     <PrimaryButton to="/explore">Explore Now</PrimaryButton>
-                    <OutlineButton to="/my-listings">Dashboard</OutlineButton>
+                    <OutlineButton to="/my-listings">My Listings</OutlineButton>
                   </>
                 ) : (
                   <>
@@ -373,7 +373,7 @@ export default function LandingPage() {
       {/* MARQUEE */}
       <MarqueeContainer>
         <MarqueeContent>
-          TRADLY <span>•</span> NO FEES <span>•</span> DIRECT TRADE <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> DIRECT TRADE <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> DIRECT TRADE <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> DIRECT TRADE <span>•</span>
+          TRADLY <span>•</span> NO FEES <span>•</span> No Ads <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> No Ads <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> No Ads <span>•</span> TRADLY <span>•</span> NO FEES <span>•</span> No Ads <span>•</span>
         </MarqueeContent>
       </MarqueeContainer>
 
@@ -417,23 +417,25 @@ export default function LandingPage() {
       </Section>
 
       {/* CTA SECTION */}
-      <Section>
-        <Container style={{ textAlign: 'center' }}>
-          <FadeInView>
-            <HeroTitle style={{ fontSize: 'clamp(2rem, 8vw, 6rem)', marginBottom: '1rem' }}>
-              Ready to <span className="hollow">Start?</span>
-            </HeroTitle>
-            <HeroSubtitle style={{ margin: '0 auto 3rem auto' }}>
-              Join the fastest growing peer-to-peer marketplace today.
-            </HeroSubtitle>
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <ButtonGroup>
-                <PrimaryButton to="/register">Create Account</PrimaryButton>
-              </ButtonGroup>
-            </div>
-          </FadeInView>
-        </Container>
-      </Section>
+      {!isAuthenticated && (
+        <Section>
+          <Container style={{ textAlign: 'center' }}>
+            <FadeInView>
+              <HeroTitle style={{ fontSize: 'clamp(2rem, 8vw, 6rem)', marginBottom: '1rem' }}>
+                Ready to <span className="hollow">Start?</span>
+              </HeroTitle>
+              <HeroSubtitle style={{ margin: '0 auto 3rem auto' }}>
+                Join the fastest growing peer-to-peer marketplace today.
+              </HeroSubtitle>
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <ButtonGroup>
+                  <PrimaryButton to="/register">Create Account</PrimaryButton>
+                </ButtonGroup>
+              </div>
+            </FadeInView>
+          </Container>
+        </Section>
+      )}
     </PageWrapper>
   );
 }

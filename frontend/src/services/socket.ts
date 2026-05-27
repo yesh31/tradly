@@ -3,6 +3,12 @@ import { io, Socket } from 'socket.io-client';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 let socket: Socket | null = null;
+let activeConversationId: string | null = null;
+let activeProductId: string | null = null;
+
+// Registry to keep track of active event listeners so they can survive disconnect/reconnect cycles
+type SocketEventCallback = (data: any) => void;
+const listeners = new Map<string, Set<SocketEventCallback>>();
 
 export const connect = (token: string): Socket => {
   if (socket?.connected) {
@@ -17,51 +23,109 @@ export const connect = (token: string): Socket => {
     reconnectionDelay: 1000,
   });
 
+  // Re-attach all registered listeners to the new socket instance
+  listeners.forEach((callbacks, event) => {
+    callbacks.forEach((callback) => {
+      socket?.on(event, callback);
+    });
+  });
+
+  // Automatically re-join active rooms on reconnection
+  socket.on('connect', () => {
+    if (activeConversationId) {
+      socket?.emit('conversation:join', activeConversationId);
+    }
+    if (activeProductId) {
+      socket?.emit('product:join', activeProductId);
+    }
+  });
+
   socket.connect();
   return socket;
 };
 
 export const disconnect = (): void => {
   if (socket) {
+    // Detach all listeners from the socket to prevent leaks, but keep them in the registry
+    listeners.forEach((callbacks, event) => {
+      callbacks.forEach((callback) => {
+        socket?.off(event, callback);
+      });
+    });
     socket.disconnect();
     socket = null;
   }
+  activeConversationId = null;
+  activeProductId = null;
 };
 
 export const getSocket = (): Socket | null => socket;
 
-export const onMessage = (callback: (data: unknown) => void): void => {
-  socket?.on('message:received', callback);
+// Robust registration helpers that work even before the socket connection is created
+export const on = (event: string, callback: SocketEventCallback): void => {
+  if (!listeners.has(event)) {
+    listeners.set(event, new Set());
+  }
+  listeners.get(event)!.add(callback);
+
+  if (socket) {
+    socket.on(event, callback);
+  }
 };
 
-export const onBid = (callback: (data: unknown) => void): void => {
-  socket?.on('bid:received', callback);
+export const off = (event: string, callback: SocketEventCallback): void => {
+  const eventListeners = listeners.get(event);
+  if (eventListeners) {
+    eventListeners.delete(callback);
+    if (eventListeners.size === 0) {
+      listeners.delete(event);
+    }
+  }
+
+  if (socket) {
+    socket.off(event, callback);
+  }
 };
 
-export const onNotification = (callback: (data: unknown) => void): void => {
-  socket?.on('notification:received', callback);
+// Legacy/wrapper helpers mapped to the corrected event names
+export const onMessage = (callback: SocketEventCallback): void => {
+  on('message:new', callback);
 };
 
-export const onTypingStart = (callback: (data: unknown) => void): void => {
-  socket?.on('typing:start', callback);
+export const onBid = (callback: SocketEventCallback): void => {
+  on('bid:new', callback);
 };
 
-export const onTypingStop = (callback: (data: unknown) => void): void => {
-  socket?.on('typing:stop', callback);
+export const onNotification = (callback: SocketEventCallback): void => {
+  on('notification:new', callback);
 };
 
+export const onTypingStart = (callback: SocketEventCallback): void => {
+  on('typing:start', callback);
+};
+
+export const onTypingStop = (callback: SocketEventCallback): void => {
+  on('typing:stop', callback);
+};
+
+// Emitter helpers with corrected payload shapes and active room tracking
 export const joinConversation = (conversationId: string): void => {
-  socket?.emit('conversation:join', { conversationId });
+  activeConversationId = conversationId;
+  socket?.emit('conversation:join', conversationId);
 };
 
 export const leaveConversation = (conversationId: string): void => {
-  socket?.emit('conversation:leave', { conversationId });
+  if (activeConversationId === conversationId) {
+    activeConversationId = null;
+  }
+  socket?.emit('conversation:leave', conversationId);
 };
 
 export const sendMessage = (data: {
   conversationId: string;
   content?: string;
   imageUrl?: string;
+  type?: 'TEXT' | 'IMAGE';
 }): void => {
   socket?.emit('message:send', data);
 };
@@ -71,17 +135,21 @@ export const placeBid = (data: { productId: string; amount: number }): void => {
 };
 
 export const joinProduct = (productId: string): void => {
-  socket?.emit('product:join', { productId });
+  activeProductId = productId;
+  socket?.emit('product:join', productId);
 };
 
 export const leaveProduct = (productId: string): void => {
-  socket?.emit('product:leave', { productId });
+  if (activeProductId === productId) {
+    activeProductId = null;
+  }
+  socket?.emit('product:leave', productId);
 };
 
-export const startTyping = (data: { conversationId: string }): void => {
+export const startTyping = (data: { conversationId: string; userId?: string }): void => {
   socket?.emit('typing:start', data);
 };
 
-export const stopTyping = (data: { conversationId: string }): void => {
+export const stopTyping = (data: { conversationId: string; userId?: string }): void => {
   socket?.emit('typing:stop', data);
 };

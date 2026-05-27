@@ -2,8 +2,11 @@ import OpenAI from 'openai';
 import { config } from '../config/index.js';
 
 const getClient = (): OpenAI | null => {
-  if (!config.openai.apiKey) return null;
-  return new OpenAI({ apiKey: config.openai.apiKey });
+  if (!config.gemini.apiKey) return null;
+  return new OpenAI({
+    apiKey: config.gemini.apiKey,
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+  });
 };
 
 const CATEGORY_PRICE_RANGES: Record<string, { min: number; max: number }> = {
@@ -132,19 +135,30 @@ Respond in JSON format: { "title": "...", "description": "..." }`;
     }
 
     const response = await client.chat.completions.create({
-      model: hasImages ? 'gpt-4o' : 'gpt-4o-mini',
-      messages: [{ role: 'user', content }],
-      max_tokens: 500,
+      model: config.gemini.model,
+      messages: [{ role: 'user', content: hasImages ? content : systemPrompt }],
+      max_tokens: 2048,
       temperature: 0.7,
     });
 
     const text = response.choices[0]?.message?.content || '{}';
-    const parsed = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim());
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim());
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {}
+      }
+    }
     return {
       title: parsed.title || mockDescription(category || '', condition || '').title,
       description: parsed.description || mockDescription(category || '', condition || '').description,
     };
-  } catch {
+  } catch (error) {
+    console.error("Error in generateProductDescription:", error);
     return mockDescription(category || '', condition || '');
   }
 }
@@ -162,7 +176,7 @@ export async function suggestFairPrice(
 
   try {
     const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: config.gemini.model,
       messages: [
         {
           role: 'system',
@@ -173,12 +187,22 @@ export async function suggestFairPrice(
           content: `Title: ${title}\nDescription: ${description}\nCategory: ${category}\nCondition: ${condition}`,
         },
       ],
-      max_tokens: 300,
+      max_tokens: 2048,
       temperature: 0.5,
     });
 
     const text = response.choices[0]?.message?.content || '{}';
-    const parsed = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim());
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim());
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {}
+      }
+    }
     return {
       suggestedPrice: parsed.suggestedPrice ?? mockPriceSuggestion(title, category, condition).suggestedPrice,
       minPrice: parsed.minPrice ?? mockPriceSuggestion(title, category, condition).minPrice,
@@ -206,7 +230,7 @@ export async function chatResponse(
     }`;
 
     const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: config.gemini.model,
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages.map((m) => ({
@@ -214,7 +238,7 @@ export async function chatResponse(
           content: m.content,
         })),
       ],
-      max_tokens: 500,
+      max_tokens: 2048,
       temperature: 0.7,
     });
 

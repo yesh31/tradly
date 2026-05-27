@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../utils/prisma.js';
 import { AuthRequest } from '../types/index.js';
 import { paginate } from '../utils/helpers.js';
+import { emitToConversation, emitToUser } from '../socket/index.js';
 
 export const createOrGetConversation = async (req: AuthRequest, res: Response) => {
   try {
@@ -243,13 +244,17 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.userId;
     const { id } = req.params;
-    const { content, imageUrl, type } = req.body as {
+    let { content, imageUrl, type } = req.body as {
       content?: string;
       imageUrl?: string;
-      type: 'TEXT' | 'IMAGE';
+      type?: 'TEXT' | 'IMAGE';
     };
 
-    if (!type || !['TEXT', 'IMAGE'].includes(type)) {
+    if (!type) {
+      type = imageUrl ? 'IMAGE' : 'TEXT';
+    }
+
+    if (!['TEXT', 'IMAGE'].includes(type)) {
       return res.status(400).json({ error: 'Invalid message type' });
     }
 
@@ -297,7 +302,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const receiverId =
       conversation.buyerId === userId ? conversation.sellerId : conversation.buyerId;
 
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         type: 'NEW_MESSAGE',
         title: 'New Message',
@@ -306,6 +311,9 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         data: { conversationId: id, messageId: message.id },
       },
     });
+
+    emitToConversation(id, 'message:new', message);
+    emitToUser(receiverId, 'notification:new', notification);
 
     return res.status(201).json({ data: message });
   } catch (error) {

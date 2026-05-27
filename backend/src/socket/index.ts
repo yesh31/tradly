@@ -41,15 +41,19 @@ export const initializeSocket = (httpServer: HttpServer) => {
     const userId = socket.userId;
     if (userId) {
       socket.join(`user:${userId}`);
-      console.log(`User connected: ${userId}`);
+      console.log(`User connected: ${userId} (Socket ID: ${socket.id})`);
+    } else {
+      console.log(`Anonymous socket connected: ${socket.id}`);
     }
 
     // Join conversation room
     socket.on('conversation:join', (conversationId: string) => {
+      console.log(`User ${userId} (Socket ID: ${socket.id}) joining conversation room: conversation:${conversationId}`);
       socket.join(`conversation:${conversationId}`);
     });
 
     socket.on('conversation:leave', (conversationId: string) => {
+      console.log(`User ${userId} (Socket ID: ${socket.id}) leaving conversation room: conversation:${conversationId}`);
       socket.leave(`conversation:${conversationId}`);
     });
 
@@ -57,14 +61,14 @@ export const initializeSocket = (httpServer: HttpServer) => {
     socket.on('typing:start', ({ conversationId, userId: typingUserId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:start', {
         conversationId,
-        userId: typingUserId,
+        userId: typingUserId || socket.userId,
       });
     });
 
     socket.on('typing:stop', ({ conversationId, userId: typingUserId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:stop', {
         conversationId,
-        userId: typingUserId,
+        userId: typingUserId || socket.userId,
       });
     });
 
@@ -191,18 +195,21 @@ export const getIO = (): Server => {
 
 export const emitToUser = (userId: string, event: string, data: any) => {
   if (io) {
+    console.log(`Server emitting event "${event}" to room "user:${userId}"`);
     io.to(`user:${userId}`).emit(event, data);
   }
 };
 
 export const emitToProduct = (productId: string, event: string, data: any) => {
   if (io) {
+    console.log(`Server emitting event "${event}" to room "product:${productId}"`);
     io.to(`product:${productId}`).emit(event, data);
   }
 };
 
 export const emitToConversation = (conversationId: string, event: string, data: any) => {
   if (io) {
+    console.log(`Server emitting event "${event}" to room "conversation:${conversationId}"`);
     io.to(`conversation:${conversationId}`).emit(event, data);
   }
 };
